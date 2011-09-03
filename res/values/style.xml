@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="StaffStyle" parent="@android:style/Theme.Black">
+    </style>
+    <style parent="@android:style/TextAppearance.Large" name="HeaderText">
+    	<item name="android:textSize">14sp</item>
+    	<item name="android:layout_height">wrap_content</item>
+    	<item name="android:ellipsize">marquee</item>
+    	<item name="android:singleLine">true</item>
+    	<item name="android:marqueeRepeatLimit">marquee_forever</item>
+    	<item name="android:focusable">true</item>
+		<item name="android:focusableInTouchMode">true</item>
+    </style>
+    <style name="DetailText" parent="@android:style/TextAppearance.Small">
+    	<item name="android:textSize">10sp</item>
+    	<item name="android:layout_height">wrap_content</item>
+    	<item name="android:singleLine">true</item>
+    </style>
+</resources>

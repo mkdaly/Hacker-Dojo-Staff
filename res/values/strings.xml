@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="intro">Who\'s at the Dojo</string>
+    <string name="app_name">Hacker Dojo Staff</string>
+    <string name="widget_url">http://hackerdojo-signin.appspot.com/ministaff</string>
+    <string name="refresh_menu">Refresh</string>
+    <string name="close_menu">Close</string>
+</resources>
