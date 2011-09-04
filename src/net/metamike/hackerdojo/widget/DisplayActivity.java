@@ -218,7 +218,8 @@ public class DisplayActivity extends Activity {
 				String url = atts.getValue("src");
 				if (url != null && peep != null)
 				try {
-					peep.setGravatar( new URL(url));
+					//TODO: Make size a setting
+					peep.setGravatar( new URL(url+"?s=50"));
 				} catch (MalformedURLException e) {
 					//swallow it
 				}

@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -37,9 +38,11 @@ public class PersonArrayAdapter extends ArrayAdapter<Person> {
 		
 		TextView nameView = (TextView)personListView.findViewById(R.id.nameTextView);
 		TextView timeView = (TextView)personListView.findViewById(R.id.timeTextView);
+		ImageView gravatarView = (ImageView)personListView.findViewById(R.id.gravatarImageView);
 		
 		nameView.setText(p.getName());
 		timeView.setText(p.getTime());
+		gravatarView.setImageBitmap(p.getGravatarImage());
 		
 		return personListView;
 	}

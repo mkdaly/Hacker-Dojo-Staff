@@ -3,7 +3,7 @@
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:layout_width="fill_parent"
   android:layout_height="fill_parent">
-    <ImageView android:src="@drawable/icon" android:id="@+id/gravatarImageView" android:layout_height="wrap_content" android:layout_width="wrap_content" android:layout_alignParentLeft="true" />
+    <ImageView android:src="@drawable/icon" android:id="@+id/gravatarImageView" android:layout_height="wrap_content" android:layout_width="wrap_content" android:layout_alignParentLeft="true" android:padding="5dp"/>
     <TextView android:id="@+id/nameTextView" style="@style/HeaderText" android:text="Long Name is looooooooooooooooooooooooooooooooooooooooooooooooooooooooooong" android:layout_width="fill_parent" android:layout_toRightOf="@id/gravatarImageView" android:layout_alignTop="@id/gravatarImageView" android:layout_alignWithParentIfMissing="true" />
     <TextView android:id="@+id/timeTextView" style="@style/DetailText" android:text="Time" android:layout_width="fill_parent" android:layout_toRightOf="@id/gravatarImageView" android:layout_alignBottom="@id/gravatarImageView" android:layout_below="@id/nameTextView" android:layout_alignWithParentIfMissing="true" />
 </RelativeLayout>
