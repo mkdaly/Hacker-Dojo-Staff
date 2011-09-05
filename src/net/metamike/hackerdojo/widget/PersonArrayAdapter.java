@@ -46,7 +46,4 @@ public class PersonArrayAdapter extends ArrayAdapter<Person> {
 		
 		return personListView;
 	}
-
-	
-
 }

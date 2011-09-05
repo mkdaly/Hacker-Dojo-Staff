@@ -12,7 +12,7 @@
   	  android:layout_width="fill_parent"
   	  android:layout_height="wrap_content"
   	  android:gravity="center_horizontal"
-  	  android:text="Fetching status..."/>
+  	  android:text="@string/fetching_status"/>
     <ProgressBar
       android:id="@+id/throbber"
   	  android:layout_width="wrap_content"

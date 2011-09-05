@@ -12,11 +12,8 @@ import java.util.List;
 import javax.xml.parsers.FactoryConfigurationError;
 
 import org.ccil.cowan.tagsoup.Parser;
-import org.jdom.Document;
-import org.jdom.input.SAXHandler;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
-import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
@@ -27,6 +24,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
@@ -41,9 +39,6 @@ public class DisplayActivity extends Activity {
 	private ListView peopleView;
 	private ProgressBar throbber;
 	
-	private static final int REFRESH_MENUITEM = Menu.FIRST;
-	private static final int CLOSE_MENUITEM = Menu.FIRST+1;
-	
 	private DojoContentHandlerImpl ch = new DojoContentHandlerImpl();
 	private List<Person> people = Collections.synchronizedList(new ArrayList<Person>());
 	private PersonArrayAdapter personAdapter;
@@ -56,6 +51,7 @@ public class DisplayActivity extends Activity {
 		setContentView(R.layout.main);
 
 		throbber = (ProgressBar) findViewById(R.id.throbber);
+		statusView = (TextView)findViewById(R.id.view_dojo_status);
 		personAdapter = new PersonArrayAdapter(this, R.layout.person, people);
 		peopleView = (ListView)findViewById(R.id.view_people);
 		peopleView.setAdapter(personAdapter);
@@ -93,7 +89,6 @@ public class DisplayActivity extends Activity {
 	}
 	
 	private void setStatusLine() {
-		statusView = (TextView)findViewById(R.id.view_dojo_status);
 		if (isOpen) {
 			statusView.setText("The Dojo is open.");
 			statusView.setTextColor(Color.GREEN);
@@ -107,18 +102,18 @@ public class DisplayActivity extends Activity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
-		menu.add(0, REFRESH_MENUITEM, Menu.NONE, R.string.refresh_menu);
-		menu.add(0, CLOSE_MENUITEM, Menu.NONE, R.string.close_menu);
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.main, menu);
 		return true;
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch(item.getItemId()) {
-			case (REFRESH_MENUITEM):
+			case (R.id.menu_refresh):
 				refresh();
 				break;
-			case (CLOSE_MENUITEM):
+			case (R.id.menu_exit):
 				this.finish();
 				break;
 		}
@@ -134,7 +129,9 @@ public class DisplayActivity extends Activity {
 	private class QueryTask extends AsyncTask<Void, Void, Void> {
 		@Override
 		protected void onPreExecute() {
-			DisplayActivity.this.throbber.setVisibility(View.VISIBLE);
+			DisplayActivity.this.throbber.setVisibility(View.VISIBLE); 
+			DisplayActivity.this.statusView.setText(R.string.fetching_status);
+			DisplayActivity.this.statusView.setTextColor(Color.LTGRAY);
 		}
 
 		@Override
