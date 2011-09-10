@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/menu_refresh" android:title="@string/menu_refresh"></item>
-    <item android:id="@+id/menu_exit" android:title="@string/menu_exit"></item>    
+    <item android:icon="@drawable/ic_menu_refresh" android:id="@+id/menu_refresh" android:title="@string/menu_refresh"></item>
+    <item android:icon="@drawable/ic_menu_close_clear_cancel" android:id="@+id/menu_exit" android:title="@string/menu_exit"></item>
+    <item android:titleCondensed="Prefs" android:title="Preferences" android:icon="@drawable/ic_menu_preferences" android:id="@+id/menu_preferences"></item>    
 </menu>
