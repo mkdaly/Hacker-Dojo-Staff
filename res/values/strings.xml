@@ -3,5 +3,6 @@
     <string name="intro">Who\'s at the Dojo</string>
     <string name="fetching_status">Fetching status...</string>
     <string name="app_name">Hacker Dojo Staff</string>
+    <string name="prefs_name">Preferences for Hacker Dojo Staff</string>
     <string name="widget_url">http://hackerdojo-signin.appspot.com/ministaff</string>
 </resources>

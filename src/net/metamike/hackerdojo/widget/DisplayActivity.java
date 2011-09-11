@@ -19,6 +19,7 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -116,6 +117,8 @@ public class DisplayActivity extends Activity {
 			case (R.id.menu_exit):
 				this.finish();
 				break;
+			case (R.id.menu_preferences):
+				startActivity(new Intent(this, PreferencesActivity.class));
 		}
 		return super.onOptionsItemSelected(item);
 	}
