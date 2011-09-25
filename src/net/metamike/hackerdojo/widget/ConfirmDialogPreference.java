@@ -8,4 +8,11 @@ public class ConfirmDialogPreference extends DialogPreference {
 	public ConfirmDialogPreference(Context c, AttributeSet a){
 		super(c,a);
 	}
+	
+	@Override
+	protected void onDialogClosed(boolean positiveResult) {
+		if (positiveResult) {
+			((PreferencesActivity)getContext()).doReset();
+		}
+	}
 }
