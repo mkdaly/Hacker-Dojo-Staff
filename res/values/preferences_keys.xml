@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AUTO_REFRESH">AUTO_REFRESH</string>
-    <string name="REFRESH_INTERVAL">REFRESH_INTERVAL</string>
-    <string name="WIDGET_URL">WIDGET_URL</string>
-    <string name="RESET">RESET</string>
+    <string name="PREF_AUTO_REFRESH">AUTO_REFRESH</string>
+    <string name="PREF_REFRESH_INTERVAL">REFRESH_INTERVAL</string>
+    <string name="PREF_LOAD_GRAVATARS">LOAD_GRAVATARS</string>
+    <string name="PREF_WIDGET_URL">WIDGET_URL</string>
+    <string name="PREF_RESET">RESET</string>
     <string name="reset_text">Reset preferences to their default values?</string>
 </resources>

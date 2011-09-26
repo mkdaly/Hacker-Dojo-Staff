@@ -5,8 +5,10 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.util.Log;
 
 public class Person {
@@ -70,5 +72,9 @@ public class Person {
 			Log.e(TAG, "IO Error.", e);
 			e.printStackTrace();
 		}
+	}
+	
+	public void setGravatar(Resources rez, int id) {
+		image = BitmapFactory.decodeResource(rez, id);
 	}
 }

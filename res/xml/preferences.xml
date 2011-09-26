@@ -4,27 +4,34 @@
 	<CheckBoxPreference 
 		android:title="Auto refresh"
 		android:defaultValue="false"
-		android:key="@string/AUTO_REFRESH"
+		android:key="@string/PREF_AUTO_REFRESH"
 		android:summary="Automatically refresh the list of people"
 	/>
 	<EditTextPreference
 		android:title="Refresh interval"
 		android:defaultValue="60"
-		android:key="@string/REFRESH_INTERVAL"
+		android:key="@string/PREF_REFRESH_INTERVAL"
 		android:summary="Refresh interval (in seconds)"
-		android:dependency="@string/AUTO_REFRESH"
+		android:dependency="@string/PREF_AUTO_REFRESH"
 		android:inputType="number"
+	/>
+	<CheckBoxPreference
+		android:title="Load Gravatar Images"
+		android:defaultValue="true"
+		android:key="@string/PREF_LOAD_GRAVATARS"
+		android:summary="Fetch gravatar images from the Internet" 
+	
 	/>
 	<EditTextPreference
 		android:title="Ministaff URL"
 		android:defaultValue="@string/widget_url"
-		android:key="@string/WIDGET_URL"
+		android:key="@string/PREF_WIDGET_URL"
 		android:summary="*Changing this can break the app*"
 		android:inputType="textUri"
 	/>
 	<net.metamike.hackerdojo.widget.ConfirmDialogPreference
 		android:title="Reset to defaults"
-		android:key="@string/RESET"
+		android:key="@string/PREF_RESET"
 		android:dialogMessage="@string/reset_text"
 	/>
 </PreferenceScreen>

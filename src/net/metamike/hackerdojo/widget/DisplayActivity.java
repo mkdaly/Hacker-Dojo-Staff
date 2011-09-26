@@ -50,27 +50,29 @@ public class DisplayActivity extends Activity {
 	private List<Person> people = Collections.synchronizedList(new ArrayList<Person>());
 	private PersonArrayAdapter personAdapter;
 	private String urlString;
+	private Boolean doFetchGravatar = Boolean.FALSE;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		Log.i(TAG, "onCreate(" + savedInstanceState + ")");
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		PreferenceManager.setDefaultValues(getApplicationContext(), R.xml.preferences, false);
+		PreferenceManager.setDefaultValues(getApplicationContext(), R.xml.preferences, true);
+		setValuesFromPreferences();
 
 		throbber = (ProgressBar) findViewById(R.id.throbber);
 		statusView = (TextView)findViewById(R.id.view_dojo_status);
 		personAdapter = new PersonArrayAdapter(this, R.layout.person, people);
 		peopleView = (ListView)findViewById(R.id.view_people);
 		peopleView.setAdapter(personAdapter);
-		setURLStringFromPreferences();
 
 		new QueryTask().execute((Void[])null);
 	}
-	
-	private void setURLStringFromPreferences() {
+
+	private void setValuesFromPreferences() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-		urlString = prefs.getString(getString(R.string.WIDGET_URL), null);
+		urlString = prefs.getString(getString(R.string.PREF_WIDGET_URL), null);
+		doFetchGravatar = prefs.getBoolean(getString(R.string.PREF_LOAD_GRAVATARS), false);
 	}
 	
 	private void queryDojo() {
@@ -161,7 +163,7 @@ public class DisplayActivity extends Activity {
 		//TODO: Implement auto-refresh
 		
 		//TODO: check for change and refresh IFF the url changed
-		setURLStringFromPreferences();
+		setValuesFromPreferences();
 		refresh();
 	}
 	
@@ -251,15 +253,20 @@ public class DisplayActivity extends Activity {
 				}
 			} if ("img".equals(localName)) {
 				//assume that the only img's are gravatar urls
-				String url = atts.getValue("src");
-				if (url != null && peep != null)
-				try {
-					//TODO: Make size a setting
-					peep.setGravatar( new URL(url+"?s=50"));
-				} catch (MalformedURLException e) {
-					//swallow it
+				if (DisplayActivity.this.doFetchGravatar) {
+					String url = atts.getValue("src");
+					if (url != null && peep != null)
+						try {
+							//TODO: Make size a setting
+							peep.setGravatar( new URL(url+"?s=50"));
+						} catch (MalformedURLException e) {
+							//swallow it
+						}
+				} else {
+					peep.setGravatar( DisplayActivity.this.getResources(), R.drawable.hd_logo);
 				}
-			}
+					
+				}
 		}		
 	}	
 }
