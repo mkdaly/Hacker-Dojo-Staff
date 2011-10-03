@@ -19,6 +19,9 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -37,6 +40,8 @@ import android.widget.TextView;
 public class DisplayActivity extends Activity {
 	private static final String TAG = "DisplayActivity";
 	private static final int PREFERENCE_ACTIVITY = 1;
+	private static final int MALFORMED_URL_DIALOG = 1;
+	private static final int IO_EXECPTION_DIALOG = 2;
 
 	private DojoContentHandlerImpl ch = new DojoContentHandlerImpl();
 
@@ -46,11 +51,13 @@ public class DisplayActivity extends Activity {
 	private ProgressBar throbber;
 
 	//State vars
-	private Boolean isOpen = Boolean.FALSE;
+	private Boolean isOpen = null; //Use null when status is unknown
 	private List<Person> people = Collections.synchronizedList(new ArrayList<Person>());
 	private PersonArrayAdapter personAdapter;
 	private String urlString;
 	private Boolean doFetchGravatar = Boolean.FALSE;
+	
+	private Exception exception; //Don't like this....
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -69,14 +76,60 @@ public class DisplayActivity extends Activity {
 		new QueryTask().execute((Void[])null);
 	}
 
+	@Override
+	protected Dialog onCreateDialog(int id) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(DisplayActivity.this);
+		switch (id) {
+		case MALFORMED_URL_DIALOG:
+			builder.setTitle(R.string.DIALOG_malformed_url_title)
+				.setCancelable(false)
+				.setMessage(R.string.DIALOG_malformed_url_body)
+				.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface arg0, int arg1) {
+						DisplayActivity.this.resetURLString();
+						DisplayActivity.this.refresh();
+					}})
+				.setNegativeButton(R.string.no, null);
+			return builder.create();
+		case IO_EXECPTION_DIALOG:
+			builder.setTitle(R.string.DIALOG_io_exception_title)
+				.setCancelable(false)
+				.setMessage(R.string.DIALOG_io_exception_body)
+				.setPositiveButton("OK", null);
+			return builder.create();
+		default:
+			return super.onCreateDialog(id);
+		}
+	}
+
+	@Override
+	protected void onPrepareDialog(int id, Dialog dialog) {
+		super.onPrepareDialog(id, dialog);
+		switch (id) {
+			case IO_EXECPTION_DIALOG:
+				if (exception != null && exception instanceof IOException) {
+					((AlertDialog)dialog).setMessage(exception.toString());
+				}
+				break;
+		}
+	}
+
 	private void setValuesFromPreferences() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		urlString = prefs.getString(getString(R.string.PREF_WIDGET_URL), null);
 		doFetchGravatar = prefs.getBoolean(getString(R.string.PREF_LOAD_GRAVATARS), false);
 	}
 	
-	private void queryDojo() {
+	private void resetURLString() {
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+		urlString = getString(R.string.widget_url);
+		prefs.edit().putString(getString(R.string.PREF_WIDGET_URL), urlString).commit();		
+	}
+	
+	private int queryDojo() {
 		try {
+			isOpen = null;
 			URL location = new URL(urlString);
 			HttpURLConnection connection = (HttpURLConnection)location.openConnection();
 			connection.connect();
@@ -88,33 +141,39 @@ public class DisplayActivity extends Activity {
 				is.close();
 			}
 			connection.disconnect();
+			return DisplayActivity.RESULT_OK;
 		} catch (MalformedURLException mfu) {
-			//TODO: Provide feedback to user
 			Log.e(TAG, "Bad URL:"+urlString, mfu);
 			mfu.printStackTrace();
+			return DisplayActivity.MALFORMED_URL_DIALOG;
 		} catch (IOException ioe) {
-			//TODO: Provide feedback to user
 			Log.e(TAG, "IO Error.", ioe);
 			ioe.printStackTrace();
+			exception = ioe;
+			return DisplayActivity.IO_EXECPTION_DIALOG;
 		} catch (FactoryConfigurationError e) {
 			//TODO: Provide feedback to user
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return -1;
 		} catch (SAXException e) {
 			//TODO: Provide feedback to user
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return -1;
 		}
 	}
 	
 	private void setStatusLine() {
-		////TODO: Add an "unknown" status
-		if (isOpen) {
-			statusView.setText("The Dojo is open.");
-			statusView.setTextColor(Color.GREEN);
+		if (isOpen == null) {
+			statusView.setText(R.string.dojo_unknown);
+			statusView.setTextColor(Color.LTGRAY);			
 		} else {
-			statusView.setText("The Dojo is closed.");
-			statusView.setTextColor(Color.RED);
+			if (isOpen) {
+				statusView.setText(R.string.dojo_open);
+				statusView.setTextColor(Color.GREEN);
+			} else {
+				statusView.setText(R.string.dojo_closed);
+				statusView.setTextColor(Color.RED);
+			}
 		}
 	}
 	
@@ -167,7 +226,7 @@ public class DisplayActivity extends Activity {
 		refresh();
 	}
 	
-	private class QueryTask extends AsyncTask<Void, Void, Void> {
+	private class QueryTask extends AsyncTask<Void, Void, Integer> {
 		@Override
 		protected void onPreExecute() {
 			DisplayActivity.this.throbber.setVisibility(View.VISIBLE); 
@@ -176,16 +235,20 @@ public class DisplayActivity extends Activity {
 		}
 
 		@Override
-		protected void onPostExecute(Void result) {
+		protected void onPostExecute(Integer result) {
+			int r = (result != null) ? r = result.intValue() : -1;
 			DisplayActivity.this.throbber.setVisibility(View.INVISIBLE);
 			setStatusLine();
 			personAdapter.notifyDataSetChanged();
+			if (DisplayActivity.MALFORMED_URL_DIALOG == r)
+				DisplayActivity.this.showDialog(DisplayActivity.MALFORMED_URL_DIALOG);
+			if (DisplayActivity.IO_EXECPTION_DIALOG == r)
+				DisplayActivity.this.showDialog(DisplayActivity.IO_EXECPTION_DIALOG);
 		}
 
 		@Override
-		protected Void doInBackground(Void... params) {
-			DisplayActivity.this.queryDojo();
-			return null;
+		protected Integer doInBackground(Void... params) {
+			return DisplayActivity.this.queryDojo();
 		}
 		
 	}
@@ -236,6 +299,8 @@ public class DisplayActivity extends Activity {
 				String cssClass = atts.getValue("class"); 
 				if ( cssClass != null && "openline".equalsIgnoreCase(cssClass)) {
 						DisplayActivity.this.isOpen = Boolean.TRUE;
+				} else {
+					//TODO: handle close case, need to see HTML when closed....
 				}
 			} if ("tr".equals(localName)) {
 				//New person
@@ -262,11 +327,8 @@ public class DisplayActivity extends Activity {
 						} catch (MalformedURLException e) {
 							//swallow it
 						}
-				} else {
-					peep.setGravatar( DisplayActivity.this.getResources(), R.drawable.hd_logo);
-				}
-					
-				}
+				}	
+			}
 		}		
 	}	
 }

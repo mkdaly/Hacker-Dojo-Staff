@@ -1,8 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<string name="yes">Yes</string>
+	<string name="no">No</string>
+	<string name="details">Details</string>
+
     <string name="intro">Who\'s at the Dojo</string>
     <string name="fetching_status">Fetching status...</string>
+	<string name="dojo_open">The Dojo is open.</string>
+	<string name="dojo_closed">The Dojo is closed.</string>
+	<string name="dojo_unknown">I can\'t tell.</string>
+	
     <string name="app_name">Hacker Dojo Staff</string>
     <string name="prefs_name">Preferences for Hacker Dojo Staff</string>
     <string name="widget_url">http://hackerdojo-signin.appspot.com/ministaff</string>
+
+    <string name="DIALOG_malformed_url_title">Bad URL</string>
+    <string name="DIALOG_malformed_url_body">The URL for the ministaff widget is broken. Reset it?</string>
+    
+    <string name="DIALOG_io_exception_title">Error getting data</string>
+    <string name="DIALOG_io_exception_body">The was a problem getting the data from the server.</string>
 </resources>
+
