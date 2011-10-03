@@ -3,6 +3,7 @@ package net.metamike.hackerdojo.widget;
 import java.util.List;
 
 import android.content.Context;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,11 +39,14 @@ public class PersonArrayAdapter extends ArrayAdapter<Person> {
 		
 		TextView nameView = (TextView)personListView.findViewById(R.id.nameTextView);
 		TextView timeView = (TextView)personListView.findViewById(R.id.timeTextView);
-		ImageView gravatarView = (ImageView)personListView.findViewById(R.id.gravatarImageView);
 		
 		nameView.setText(p.getName());
 		timeView.setText(p.getTime());
-		gravatarView.setImageBitmap(p.getGravatarImage());
+
+		if (PreferenceManager.getDefaultSharedPreferences(getContext()).getBoolean(getContext().getString(R.string.PREF_LOAD_GRAVATARS), false)) {
+			ImageView gravatarView = (ImageView)personListView.findViewById(R.id.gravatarImageView);
+			gravatarView.setImageBitmap(p.getGravatarImage());
+		}
 		
 		return personListView;
 	}
