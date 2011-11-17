@@ -1,49 +1,38 @@
 package net.metamike.hackerdojo.widget;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.xml.parsers.FactoryConfigurationError;
-
-import org.ccil.cowan.tagsoup.Parser;
-import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.DefaultHandler;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public class DisplayActivity extends Activity {
 	private static final String TAG = "DisplayActivity";
-	private static final int PREFERENCE_ACTIVITY = 1;
-	private static final int MALFORMED_URL_DIALOG = 1;
-	private static final int IO_EXECPTION_DIALOG = 2;
+	static final int PREFERENCE_ACTIVITY = 1;
+	static final int MALFORMED_URL_DIALOG = 1;
+	static final int IO_EXECPTION_DIALOG = 2;
 
-	private DojoContentHandlerImpl ch = new DojoContentHandlerImpl();
+	public static final String DOJO_PREFERENCES_UPDATED = "Dojo_Preferences_Updated";
 
 	//Views
 	private TextView statusView;
@@ -51,13 +40,13 @@ public class DisplayActivity extends Activity {
 	private ProgressBar throbber;
 
 	//State vars
-	private Boolean isOpen = null; //Use null when status is unknown
+	//private Boolean isOpen = null; //Use null when status is unknown
 	private List<Person> people = Collections.synchronizedList(new ArrayList<Person>());
 	private PersonArrayAdapter personAdapter;
-	private String urlString;
-	private Boolean doFetchGravatar = Boolean.FALSE;
+	private String exceptionText = "";
 	
-	private Exception exception; //Don't like this....
+	private ExceptionReceiver exceptionReceiver;
+	private PersonReceiver personReceiver;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +54,6 @@ public class DisplayActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 		PreferenceManager.setDefaultValues(getApplicationContext(), R.xml.preferences, true);
-		setValuesFromPreferences();
 
 		throbber = (ProgressBar) findViewById(R.id.throbber);
 		statusView = (TextView)findViewById(R.id.view_dojo_status);
@@ -73,7 +61,7 @@ public class DisplayActivity extends Activity {
 		peopleView = (ListView)findViewById(R.id.view_people);
 		peopleView.setAdapter(personAdapter);
 
-		new QueryTask().execute((Void[])null);
+		startService( new Intent(this, QueryService.class));
 	}
 
 	@Override
@@ -108,66 +96,29 @@ public class DisplayActivity extends Activity {
 		super.onPrepareDialog(id, dialog);
 		switch (id) {
 			case IO_EXECPTION_DIALOG:
-				if (exception != null && exception instanceof IOException) {
-					((AlertDialog)dialog).setMessage(exception.toString());
-				}
+				((AlertDialog)dialog).setMessage(exceptionText);
+				exceptionText = "";
 				break;
 		}
 	}
-
-	private void setValuesFromPreferences() {
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-		urlString = prefs.getString(getString(R.string.PREF_WIDGET_URL), null);
-		doFetchGravatar = prefs.getBoolean(getString(R.string.PREF_LOAD_GRAVATARS), false);
+	
+	void setThrobber(int state) {
+		//TODO: This might cause threading issues....  Test!
+		throbber.setVisibility(state);
 	}
 	
 	private void resetURLString() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-		urlString = getString(R.string.widget_url);
+		String urlString = getString(R.string.widget_url);
 		prefs.edit().putString(getString(R.string.PREF_WIDGET_URL), urlString).commit();		
 	}
 	
-	private int queryDojo() {
-		try {
-			isOpen = null;
-			URL location = new URL(urlString);
-			HttpURLConnection connection = (HttpURLConnection)location.openConnection();
-			connection.connect();
-			if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-				InputStream is = connection.getInputStream();
-				XMLReader reader = new Parser();
-				reader.setContentHandler(ch);
-				reader.parse( new InputSource(is));
-				is.close();
-			}
-			connection.disconnect();
-			return DisplayActivity.RESULT_OK;
-		} catch (MalformedURLException mfu) {
-			Log.e(TAG, "Bad URL:"+urlString, mfu);
-			mfu.printStackTrace();
-			return DisplayActivity.MALFORMED_URL_DIALOG;
-		} catch (IOException ioe) {
-			Log.e(TAG, "IO Error.", ioe);
-			ioe.printStackTrace();
-			exception = ioe;
-			return DisplayActivity.IO_EXECPTION_DIALOG;
-		} catch (FactoryConfigurationError e) {
-			//TODO: Provide feedback to user
-			e.printStackTrace();
-			return -1;
-		} catch (SAXException e) {
-			//TODO: Provide feedback to user
-			e.printStackTrace();
-			return -1;
-		}
-	}
-	
-	private void setStatusLine() {
-		if (isOpen == null) {
+	private void setStatusLine(Boolean status) {
+		if (status == null) {
 			statusView.setText(R.string.dojo_unknown);
 			statusView.setTextColor(Color.LTGRAY);			
 		} else {
-			if (isOpen) {
+			if (status) {
 				statusView.setText(R.string.dojo_open);
 				statusView.setTextColor(Color.GREEN);
 			} else {
@@ -211,124 +162,70 @@ public class DisplayActivity extends Activity {
 			//if (resultCode == Activity.RESULT_OK)
 			updateFromPreferences();
 	}
-		
+
+	@Override
+	protected void onPause() {
+		unregisterReceiver(exceptionReceiver);
+		unregisterReceiver(personReceiver);
+		super.onPause();
+	}
+
+	@Override
+	protected void onResume() {
+		IntentFilter exceptionFilter = new IntentFilter(QueryService.EXCEPTION_THROWN);
+		IntentFilter finishedFilter = new IntentFilter(QueryService.FINISHED_QUERYING_DOJO);
+		exceptionReceiver = new ExceptionReceiver();
+		registerReceiver(exceptionReceiver, exceptionFilter);
+		personReceiver = new PersonReceiver();
+		registerReceiver(personReceiver, finishedFilter);
+		super.onResume();
+	}
+
 	private void refresh() {
 		this.people.clear();
 		personAdapter.notifyDataSetChanged();
-		new QueryTask().execute((Void[])null);
+		startService(new Intent(this, QueryService.class));
 	}
 	
 	private void updateFromPreferences() {
 		//TODO: Implement auto-refresh
 		
 		//TODO: check for change and refresh IFF the url changed
-		setValuesFromPreferences();
-		refresh();
+		//setValuesFromPreferences();
+		sendBroadcast( new Intent(DOJO_PREFERENCES_UPDATED));
 	}
 	
-	private class QueryTask extends AsyncTask<Void, Void, Integer> {
+	public class ExceptionReceiver extends BroadcastReceiver {
 		@Override
-		protected void onPreExecute() {
-			DisplayActivity.this.throbber.setVisibility(View.VISIBLE); 
-			DisplayActivity.this.statusView.setText(R.string.fetching_status);
-			DisplayActivity.this.statusView.setTextColor(Color.LTGRAY);
+		public void onReceive(Context context, Intent intent) {
+			if (intent == null) {
+				return;
+			}
+			Bundle info = intent.getExtras();
+			if (info != null && info.containsKey("exception")) {
+				Exception e = (Exception)info.getSerializable("exception");
+				if (e instanceof MalformedURLException)
+					showDialog(DisplayActivity.MALFORMED_URL_DIALOG);
+				if (e instanceof IOException) {
+					DisplayActivity.this.exceptionText = e.toString();
+					showDialog(DisplayActivity.IO_EXECPTION_DIALOG);
+				}
+			}
 		}
-
-		@Override
-		protected void onPostExecute(Integer result) {
-			int r = (result != null) ? r = result.intValue() : -1;
-			DisplayActivity.this.throbber.setVisibility(View.INVISIBLE);
-			setStatusLine();
-			personAdapter.notifyDataSetChanged();
-			if (DisplayActivity.MALFORMED_URL_DIALOG == r)
-				DisplayActivity.this.showDialog(DisplayActivity.MALFORMED_URL_DIALOG);
-			if (DisplayActivity.IO_EXECPTION_DIALOG == r)
-				DisplayActivity.this.showDialog(DisplayActivity.IO_EXECPTION_DIALOG);
-		}
-
-		@Override
-		protected Integer doInBackground(Void... params) {
-			return DisplayActivity.this.queryDojo();
-		}
-		
 	}
-
-	private class DojoContentHandlerImpl extends DefaultHandler {
-		private Person peep;
-		
-		private boolean inName = false;
-		private boolean inAgo = false;
-		private String attr = "";
-		private StringBuffer sb = new StringBuffer();
-
+	
+	public class PersonReceiver extends BroadcastReceiver {
 		@Override
-		public void characters(char[] ch, int start, int length)
-				throws SAXException {
-			//the null check for this.peep should have been done in startElement() 
-			if (inName || inAgo) {
-				sb.append(ch, start, length);
+		public void onReceive(Context context, Intent intent) {
+			if (intent == null) {
+				return;
+			}
+			Bundle info = intent.getExtras();
+			if (info != null && info.containsKey(QueryService.INTENT_EXTRA_PEOPLE)) {
+				people.addAll((List<? extends Person>) info.getParcelableArrayList(QueryService.INTENT_EXTRA_PEOPLE));
+				personAdapter.notifyDataSetChanged();
+				setStatusLine(info.getBoolean(QueryService.INTENT_EXTRA_STATUS));
 			}
 		}
-		
-		@Override
-		public void endElement(String uri, String localName, String qName)
-				throws SAXException {
-			if ("tr".equals(localName)) {
-				if (peep != null && peep.verify()) {
-					DisplayActivity.this.people.add(peep);
-				}
-			} if ("span".equals(localName)) {
-				if("name".equalsIgnoreCase(attr) && peep != null) {
-					peep.setName(sb.toString());
-					sb = new StringBuffer();
-					attr = null;
-					inName = false;
-				} else if("ago".equalsIgnoreCase(attr) && peep != null) {
-					peep.setTime(sb.toString());
-					sb = new StringBuffer();
-					attr = null;
-					inAgo = false;
-				}
-			}
-		}
-
-		@Override
-		public void startElement(String uri, String localName, String qName,
-				Attributes atts) throws SAXException {
-			if ("p".equals(localName)) {
-				String cssClass = atts.getValue("class"); 
-				if ( cssClass != null && "openline".equalsIgnoreCase(cssClass)) {
-						DisplayActivity.this.isOpen = Boolean.TRUE;
-				} else {
-					//TODO: handle close case, need to see HTML when closed....
-				}
-			} if ("tr".equals(localName)) {
-				//New person
-				peep = new Person();
-			} if ("span".equals(localName)) {
-				String klass = atts.getValue("class"); 
-				if ( klass == null) {
-					return;
-				} else if("name".equalsIgnoreCase(klass) && peep != null) {
-					attr = klass;
-					inName = true;
-				} else if("ago".equalsIgnoreCase(klass) && peep != null) {
-					attr = klass;
-					inAgo = true;
-				}
-			} if ("img".equals(localName)) {
-				//assume that the only img's are gravatar urls
-				if (DisplayActivity.this.doFetchGravatar) {
-					String url = atts.getValue("src");
-					if (url != null && peep != null)
-						try {
-							//TODO: Make size a setting
-							peep.setGravatar( new URL(url+"?s=50"));
-						} catch (MalformedURLException e) {
-							//swallow it
-						}
-				}	
-			}
-		}		
-	}	
+	}
 }
