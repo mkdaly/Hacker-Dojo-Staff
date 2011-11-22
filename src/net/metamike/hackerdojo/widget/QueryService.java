@@ -6,10 +6,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import javax.xml.parsers.FactoryConfigurationError;
+
+import net.metamike.hackerdojo.widget.DisplayActivity.DojoStatus;
 
 import org.ccil.cowan.tagsoup.Parser;
 import org.xml.sax.Attributes;
@@ -21,26 +21,29 @@ import org.xml.sax.helpers.DefaultHandler;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Binder;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.View;
 
 public class QueryService extends Service {
-	public static final String EXCEPTION_THROWN = "Exception_Thrown";
-	public static final String FINISHED_QUERYING_DOJO = "Finished_Querying_Dojo";
+	public static final String INTENT_EXCEPTION_THROWN = "net.metamike.hackerdojo.widget.intents.Exception_Thrown";
+	public static final String INTENT_QUERYING_DOJO = "net.metamike.hackerdojo.widget.intents.Querying_Dojo";
+//	public static final String INTENT_STARTED_QUERYING_DOJO = "net.metamike.hackerdojo.widget.intents.Starting_Querying_Dojo";
+//	public static final String INTENT_FINISHED_QUERYING_DOJO = "net.metamike.hackerdojo.widget.intents.Finished_Querying_Dojo";
 
-	public static final String INTENT_EXTRA_PEOPLE = "people";
-	public static final String INTENT_EXTRA_STATUS = "status";
+	public static final String INTENT_EXTRA_PEOPLE = "net.metamike.hackerdojo.widget.intents.people";
+	public static final String INTENT_EXTRA_STATUS = "net.metamike.hackerdojo.widget.intents.status";
+	//public static final String INTENT_EXTRA_THROBBER = "net.metamike.hackerdojo.widget.intents.throbber";
+
 	
 	private static final String TAG = "QueryService";
 
 	private String urlString;
 	private Boolean doFetchGravatar = Boolean.FALSE;
 
-	private Boolean status;  //TODO: Make tri-state, via a new class?
+	private DojoStatus status;
 	private ArrayList<Person> people;
 	
 	private DojoContentHandlerImpl ch = new DojoContentHandlerImpl();
@@ -54,13 +57,12 @@ public class QueryService extends Service {
 	public void onStart(Intent intent, int startId) {
 		setValuesFromPreferences();
 		people = new ArrayList<Person>();
-		status = null;
+		status = DojoStatus.UNKNOWN;
 		new QueryTask().execute((Void[])null);
 	}
-
+	
 	@Override
 	public IBinder onBind(Intent arg0) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
@@ -68,10 +70,9 @@ public class QueryService extends Service {
 		people.add(peep);
 	}
 	
-	private void setStatus(Boolean status) {
+	private void setStatus(DojoStatus status) {
 		this.status = status;
 	}
-	
 	
 	private void setValuesFromPreferences() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
@@ -82,20 +83,15 @@ public class QueryService extends Service {
 	private class QueryTask extends AsyncTask<Void, Person, Void> {
 		@Override
 		protected void onPreExecute() {
-			/*
-			 * TODO: Figure out how to communicate this....
-			DisplayActivity.this.throbber.setVisibility(View.VISIBLE); 
-			DisplayActivity.this.statusView.setText(R.string.fetching_status);
-			DisplayActivity.this.statusView.setTextColor(Color.LTGRAY);
-			*/
+			//Intent i = new Intent(QueryService.this, DisplayActivity.PersonReceiver.class);
+			Intent i = new Intent(INTENT_QUERYING_DOJO);
+			sendBroadcast(i);			
 		}
 
 		@Override
 		protected void onPostExecute(Void result) {
-			//TODO: Figure out how to communicate this....
-			//DisplayActivity.this.setThrobber(View.INVISIBLE);
-
-			Intent i = new Intent(FINISHED_QUERYING_DOJO);
+			//Intent i = new Intent(QueryService.this, DisplayActivity.PersonReceiver.class);
+			Intent i = new Intent(INTENT_QUERYING_DOJO);
 			i.putExtra(INTENT_EXTRA_PEOPLE, people);
 			i.putExtra(INTENT_EXTRA_STATUS, status);
 			sendBroadcast(i);
@@ -104,7 +100,6 @@ public class QueryService extends Service {
 		@Override
 		protected Void doInBackground(Void... params) {
 			try {
-				//isOpen = null; TODO: Need to figure out how to communicate to DisplayActivity
 				URL location = new URL(urlString);
 				HttpURLConnection connection = (HttpURLConnection)location.openConnection();
 				connection.connect();
@@ -119,13 +114,13 @@ public class QueryService extends Service {
 			} catch (MalformedURLException mfu) {
 				Log.e(TAG, "Bad URL:"+urlString, mfu);
 				mfu.printStackTrace();
-				Intent i = new Intent(EXCEPTION_THROWN);
+				Intent i = new Intent(INTENT_EXCEPTION_THROWN);
 				i.putExtra("exception", mfu);
 				sendBroadcast(i);				
 			} catch (IOException ioe) {
 				Log.e(TAG, "IO Error.", ioe);
 				ioe.printStackTrace();
-				Intent i = new Intent(EXCEPTION_THROWN);
+				Intent i = new Intent(INTENT_EXCEPTION_THROWN);
 				i.putExtra("exception", ioe);
 				sendBroadcast(i);
 			} catch (FactoryConfigurationError e) {
@@ -139,6 +134,11 @@ public class QueryService extends Service {
 		}
 	}
 
+	public class QueryBinder extends Binder {
+		QueryService getService() {
+			return QueryService.this;
+		}
+	}
 
 	private class DojoContentHandlerImpl extends DefaultHandler {
 		private Person peep;
@@ -185,9 +185,11 @@ public class QueryService extends Service {
 			if ("p".equals(localName)) {
 				String cssClass = atts.getValue("class"); 
 				if ( cssClass != null && "openline".equalsIgnoreCase(cssClass)) {
-						setStatus(Boolean.TRUE);
+					setStatus(DojoStatus.OPEN);
+				} else if ( cssClass != null && "closeline".equalsIgnoreCase(cssClass)) {
+					setStatus(DojoStatus.CLOSE);
 				} else {
-					//TODO: handle close case, need to see HTML when closed....
+					setStatus(DojoStatus.UNKNOWN);
 				}
 			} if ("tr".equals(localName)) {
 				//New person
@@ -217,6 +219,5 @@ public class QueryService extends Service {
 				}	
 			}
 		}		
-	}	
-
+	}
 }

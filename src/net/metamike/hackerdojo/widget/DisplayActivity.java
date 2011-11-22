@@ -22,6 +22,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -40,7 +41,6 @@ public class DisplayActivity extends Activity {
 	private ProgressBar throbber;
 
 	//State vars
-	//private Boolean isOpen = null; //Use null when status is unknown
 	private List<Person> people = Collections.synchronizedList(new ArrayList<Person>());
 	private PersonArrayAdapter personAdapter;
 	private String exceptionText = "";
@@ -62,6 +62,7 @@ public class DisplayActivity extends Activity {
 		peopleView.setAdapter(personAdapter);
 
 		startService( new Intent(this, QueryService.class));
+		//bindService( service, queryConnection, Context.BIND_AUTO_CREATE);
 	}
 
 	@Override
@@ -102,29 +103,34 @@ public class DisplayActivity extends Activity {
 		}
 	}
 	
-	void setThrobber(int state) {
-		//TODO: This might cause threading issues....  Test!
-		throbber.setVisibility(state);
-	}
-	
 	private void resetURLString() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		String urlString = getString(R.string.widget_url);
 		prefs.edit().putString(getString(R.string.PREF_WIDGET_URL), urlString).commit();		
 	}
 	
-	private void setStatusLine(Boolean status) {
-		if (status == null) {
-			statusView.setText(R.string.dojo_unknown);
-			statusView.setTextColor(Color.LTGRAY);			
-		} else {
-			if (status) {
+	private void setStatusLine(DojoStatus status) {
+		switch (status) {
+			case UNKNOWN:
+				statusView.setText(R.string.dojo_unknown);
+				statusView.setTextColor(Color.LTGRAY);
+				throbber.setVisibility(View.INVISIBLE);
+				break;
+			case FETCHING:
+				statusView.setText(R.string.fetching_status);
+				statusView.setTextColor(Color.LTGRAY);
+				throbber.setVisibility(View.VISIBLE);
+				break;
+			case OPEN:
 				statusView.setText(R.string.dojo_open);
 				statusView.setTextColor(Color.GREEN);
-			} else {
+				throbber.setVisibility(View.INVISIBLE);
+				break;
+			case CLOSE:
 				statusView.setText(R.string.dojo_closed);
 				statusView.setTextColor(Color.RED);
-			}
+				throbber.setVisibility(View.INVISIBLE);
+				break;
 		}
 	}
 	
@@ -172,18 +178,21 @@ public class DisplayActivity extends Activity {
 
 	@Override
 	protected void onResume() {
-		IntentFilter exceptionFilter = new IntentFilter(QueryService.EXCEPTION_THROWN);
-		IntentFilter finishedFilter = new IntentFilter(QueryService.FINISHED_QUERYING_DOJO);
+		IntentFilter exceptionFilter = new IntentFilter(QueryService.INTENT_EXCEPTION_THROWN);
+		IntentFilter finishedFilter = new IntentFilter(QueryService.INTENT_QUERYING_DOJO);
+//		IntentFilter startedFilter = new IntentFilter(QueryService.INTENT_STARTED_QUERYING_DOJO);
 		exceptionReceiver = new ExceptionReceiver();
 		registerReceiver(exceptionReceiver, exceptionFilter);
 		personReceiver = new PersonReceiver();
 		registerReceiver(personReceiver, finishedFilter);
+//		registerReceiver(personReceiver, startedFilter);
 		super.onResume();
 	}
 
 	private void refresh() {
 		this.people.clear();
 		personAdapter.notifyDataSetChanged();
+		//setStatusLine(DojoStatus.FETCHING);
 		startService(new Intent(this, QueryService.class));
 	}
 	
@@ -203,6 +212,7 @@ public class DisplayActivity extends Activity {
 			}
 			Bundle info = intent.getExtras();
 			if (info != null && info.containsKey("exception")) {
+				setStatusLine(DojoStatus.UNKNOWN);
 				Exception e = (Exception)info.getSerializable("exception");
 				if (e instanceof MalformedURLException)
 					showDialog(DisplayActivity.MALFORMED_URL_DIALOG);
@@ -224,8 +234,39 @@ public class DisplayActivity extends Activity {
 			if (info != null && info.containsKey(QueryService.INTENT_EXTRA_PEOPLE)) {
 				people.addAll((List<? extends Person>) info.getParcelableArrayList(QueryService.INTENT_EXTRA_PEOPLE));
 				personAdapter.notifyDataSetChanged();
-				setStatusLine(info.getBoolean(QueryService.INTENT_EXTRA_STATUS));
+				setStatusLine((DojoStatus) info.get(QueryService.INTENT_EXTRA_STATUS));
+			} else {
+				setStatusLine(DojoStatus.FETCHING);
 			}
 		}
 	}
+	
+	public enum DojoStatus {
+		OPEN,
+		CLOSE,
+		UNKNOWN,
+		FETCHING;
+	}
+/*	
+	private ServiceConnection queryConnection = new ServiceConnection() {
+		private QueryService queryService;
+		@Override
+		public void onServiceDisconnected(ComponentName name) {
+			queryService = null;
+		}
+		
+		@Override
+		public void onServiceConnected(ComponentName name, IBinder service) {
+			queryService = ((QueryService.QueryBinder)service).getService();
+			queryService.setHandler( new Handler(new Handler.Callback() {
+				@Override
+				public boolean handleMessage(Message msg) {
+					if (msg.obj != null && msg.obj instanceof DojoStatus) {
+						setStatusLine((DojoStatus)msg.obj);
+					}
+					return true;
+				}
+			}));
+		}
+	};*/
 }
