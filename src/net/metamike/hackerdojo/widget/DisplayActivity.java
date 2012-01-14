@@ -150,6 +150,7 @@ public class DisplayActivity extends Activity {
 				refresh();
 				return true;
 			case (R.id.menu_exit):
+				this.stopService(new Intent(this, QueryService.class));
 				this.finish();
 				return true;
 			case (R.id.menu_preferences):
