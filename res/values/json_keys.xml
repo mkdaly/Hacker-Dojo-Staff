@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="JSON_IMAGE_URL">image_url</string>
+    <string name="JSON_NAME">name</string>
+    <string name="JSON_LOG_IN_TIME">created</string>
+</resources>
