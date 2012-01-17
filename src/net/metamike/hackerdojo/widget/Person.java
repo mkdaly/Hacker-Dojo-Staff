@@ -3,6 +3,7 @@ package net.metamike.hackerdojo.widget;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 import android.content.res.Resources;
@@ -15,15 +16,27 @@ import android.util.Log;
 public class Person implements Parcelable {
 	private static final String TAG = "Person";
 
+	private long md5;
 	private String name;
 	private String time;
 	private Bitmap image;
 
 	public Person() {}
+
+	public Person(String name, String time, String imageURL) {
+		this.name = name;
+		this.time = time;
+		try {
+			setGravatar(new URL(imageURL));
+		} catch (MalformedURLException mfu) {
+			Log.e(TAG, "IO Error.", mfu);
+		}
+	}
 	
 	private Person(Parcel src) {
 		name = src.readString();
 		time = src.readString();
+		md5 = src.readLong();
 		image = src.readParcelable(null);
 	}
 	
@@ -35,6 +48,14 @@ public class Person implements Parcelable {
 //		if (image == null || "".equals(name)) { return false; }
 		
 		return true;
+	}
+	
+	public void setMD5(long md5) {
+		this.md5 = md5;
+	}
+	
+	public long getMD5() {
+		return this.md5;
 	}
 
 	public String getName() {
@@ -90,6 +111,7 @@ public class Person implements Parcelable {
 	public void writeToParcel(Parcel dest, int flags) {
 		dest.writeString(name);
 		dest.writeString(time);
+		dest.writeLong(md5);
 		dest.writeParcelable(image, flags);	
 	}
 	

@@ -1,28 +1,22 @@
 package net.metamike.hackerdojo.widget;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
-import javax.xml.parsers.FactoryConfigurationError;
-
 import net.metamike.hackerdojo.widget.DisplayActivity.DojoStatus;
 
-import org.ccil.cowan.tagsoup.Parser;
-import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.DefaultHandler;
+import com.google.gson.stream.JsonReader;
 
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -40,17 +34,20 @@ public class QueryService extends Service {
 	
 	private static final String TAG = "QueryService";
 
-	private String urlString;
+	private String staffUrlString;
 	private Boolean doFetchGravatar = Boolean.FALSE;
 
 	private DojoStatus status;
-	private ArrayList<Person> people;
-	
-	private DojoContentHandlerImpl ch = new DojoContentHandlerImpl();
-	
+	private ArrayList<Person> people;	
 
 	@Override
 	public void onCreate() {
+		//From http://android-developers.blogspot.com/2011/09/androids-http-clients.html
+		// 8 is the magic number for FROYO
+		if (Build.VERSION.SDK_INT < 8) {
+	        System.setProperty("http.keepAlive", "false");
+	    }
+
 	}
 
 	@Override
@@ -70,13 +67,16 @@ public class QueryService extends Service {
 		people.add(peep);
 	}
 	
-	private void setStatus(DojoStatus status) {
-		this.status = status;
+	private void setStatus() {
+		if (people.isEmpty())
+			this.status =  DojoStatus.CLOSED;
+		else 
+			this.status = DojoStatus.OPEN;
 	}
 	
 	private void setValuesFromPreferences() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-		urlString = prefs.getString(getString(R.string.PREF_WIDGET_URL), null);
+		staffUrlString = prefs.getString(getString(R.string.PREF_WIDGET_URL), null);
 		doFetchGravatar = prefs.getBoolean(getString(R.string.PREF_LOAD_GRAVATARS), false);
 	}
 	
@@ -100,19 +100,24 @@ public class QueryService extends Service {
 		@Override
 		protected Void doInBackground(Void... params) {
 			try {
-				URL location = new URL(urlString);
+				URL location = new URL(staffUrlString);
 				HttpURLConnection connection = (HttpURLConnection)location.openConnection();
 				connection.connect();
 				if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-					InputStream is = connection.getInputStream();
-					XMLReader reader = new Parser();
-					reader.setContentHandler(ch);
-					reader.parse( new InputSource(is));
-					is.close();
+					JsonReader reader = null;
+					try {
+						reader = new JsonReader( new InputStreamReader(connection.getInputStream()));
+						reader.setLenient(true);
+						readStaff(reader);
+					}
+					finally {
+						if (reader != null) 
+							reader.close();
+					}
 				}
 				connection.disconnect();
 			} catch (MalformedURLException mfu) {
-				Log.e(TAG, "Bad URL:"+urlString, mfu);
+				Log.e(TAG, "Bad URL:"+staffUrlString, mfu);
 				mfu.printStackTrace();
 				Intent i = new Intent(INTENT_EXCEPTION_THROWN);
 				i.putExtra("exception", mfu);
@@ -123,101 +128,47 @@ public class QueryService extends Service {
 				Intent i = new Intent(INTENT_EXCEPTION_THROWN);
 				i.putExtra("exception", ioe);
 				sendBroadcast(i);
-			} catch (FactoryConfigurationError e) {
-				//TODO: Provide feedback to user
-				e.printStackTrace();
-			} catch (SAXException e) {
-				//TODO: Provide feedback to user
-				e.printStackTrace();
 			}
 			return null;
 		}
+	}
+
+	//TODO: Handle IOE
+	private void readStaff(JsonReader reader) throws IOException {
+		reader.beginArray();
+		while (reader.hasNext()) {
+			addNewPerson(readPerson(reader));
+		}
+		reader.endArray();
+		setStatus();
+	}
+
+	//TODO: Handle IOE
+	private Person readPerson(JsonReader reader) throws IOException{
+		String personName = null;
+		String time = null;
+		String imageURL = null;
+		reader.beginObject();
+		while(reader.hasNext()) {
+			String name = reader.nextName();
+			if (getString(R.string.JSON_NAME).equals(name)) {
+				personName = reader.nextString();
+			} else if (getString(R.string.JSON_LOG_IN_TIME).equals(name)) {
+				time = reader.nextString();
+			} else if ( this.doFetchGravatar && getString(R.string.JSON_IMAGE_URL).equals(name)){
+				imageURL = reader.nextString();
+			} else {
+				reader.skipValue();
+			}
+		}
+		reader.endObject();
+		//TODO: Make size a setting
+		return new Person(personName, time, imageURL+"?s=50");
 	}
 
 	public class QueryBinder extends Binder {
 		QueryService getService() {
 			return QueryService.this;
 		}
-	}
-
-	private class DojoContentHandlerImpl extends DefaultHandler {
-		private Person peep;
-		
-		private boolean inName = false;
-		private boolean inAgo = false;
-		private String attr = "";
-		private StringBuffer sb = new StringBuffer();
-
-		@Override
-		public void characters(char[] ch, int start, int length)
-				throws SAXException {
-			//the null check for this.peep should have been done in startElement() 
-			if (inName || inAgo) {
-				sb.append(ch, start, length);
-			}
-		}
-		
-		@Override
-		public void endElement(String uri, String localName, String qName)
-				throws SAXException {
-			if ("tr".equals(localName)) {
-				if (peep != null && peep.verify()) {
-					QueryService.this.addNewPerson(peep);
-				}
-			} if ("span".equals(localName)) {
-				if("name".equalsIgnoreCase(attr) && peep != null) {
-					peep.setName(sb.toString());
-					sb = new StringBuffer();
-					attr = null;
-					inName = false;
-				} else if("ago".equalsIgnoreCase(attr) && peep != null) {
-					peep.setTime(sb.toString());
-					sb = new StringBuffer();
-					attr = null;
-					inAgo = false;
-				}
-			}
-		}
-
-		@Override
-		public void startElement(String uri, String localName, String qName,
-				Attributes atts) throws SAXException {
-			if ("p".equals(localName)) {
-				String cssClass = atts.getValue("class"); 
-				if ( cssClass != null && "openline".equalsIgnoreCase(cssClass)) {
-					setStatus(DojoStatus.OPEN);
-				} else if ( cssClass != null && "closeline".equalsIgnoreCase(cssClass)) {
-					setStatus(DojoStatus.CLOSE);
-				} else {
-					setStatus(DojoStatus.UNKNOWN);
-				}
-			} if ("tr".equals(localName)) {
-				//New person
-				peep = new Person();
-			} if ("span".equals(localName)) {
-				String klass = atts.getValue("class"); 
-				if ( klass == null) {
-					return;
-				} else if("name".equalsIgnoreCase(klass) && peep != null) {
-					attr = klass;
-					inName = true;
-				} else if("ago".equalsIgnoreCase(klass) && peep != null) {
-					attr = klass;
-					inAgo = true;
-				}
-			} if ("img".equals(localName)) {
-				//assume that the only img's are gravatar urls
-				if (QueryService.this.doFetchGravatar) {
-					String url = atts.getValue("src");
-					if (url != null && peep != null)
-						try {
-							//TODO: Make size a setting
-							peep.setGravatar( new URL(url+"?s=50"));
-						} catch (MalformedURLException e) {
-							//swallow it
-						}
-				}	
-			}
-		}		
 	}
 }
