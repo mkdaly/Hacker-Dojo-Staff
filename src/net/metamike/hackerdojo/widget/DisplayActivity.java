@@ -126,7 +126,7 @@ public class DisplayActivity extends Activity {
 				statusView.setTextColor(Color.GREEN);
 				throbber.setVisibility(View.INVISIBLE);
 				break;
-			case CLOSE:
+			case CLOSED:
 				statusView.setText(R.string.dojo_closed);
 				statusView.setTextColor(Color.RED);
 				throbber.setVisibility(View.INVISIBLE);
@@ -244,7 +244,7 @@ public class DisplayActivity extends Activity {
 	
 	public enum DojoStatus {
 		OPEN,
-		CLOSE,
+		CLOSED,
 		UNKNOWN,
 		FETCHING;
 	}
