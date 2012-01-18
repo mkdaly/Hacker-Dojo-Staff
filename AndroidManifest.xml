@@ -7,14 +7,14 @@
 
 
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:theme="@style/StaffStyle">
-        <activity android:launchMode="standard" android:name="DisplayActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"></action>
-                <category android:name="android.intent.category.LAUNCHER"></category>
-            </intent-filter>
+        <activity android:launchMode="standard" android:name=".StaffActivity">
         </activity>
         <activity android:name="PreferencesActivity" android:label="@string/prefs_name"></activity>
         <service android:name="QueryService"/>
+        <activity android:name="InfoActivity"><intent-filter>
+                <action android:name="android.intent.action.MAIN"></action>
+                <category android:name="android.intent.category.LAUNCHER"></category>
+            </intent-filter></activity>
 
 
     </application>

@@ -7,7 +7,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
-import net.metamike.hackerdojo.widget.DisplayActivity.DojoStatus;
+import net.metamike.hackerdojo.widget.InfoActivity.DojoStatus;
 
 import com.google.gson.stream.JsonReader;
 
@@ -163,7 +163,7 @@ public class QueryService extends Service {
 		}
 		reader.endObject();
 		//TODO: Make size a setting
-		return new Person(personName, time, imageURL+"?s=50");
+		return new Person(personName, time, imageURL);
 	}
 
 	public class QueryBinder extends Binder {

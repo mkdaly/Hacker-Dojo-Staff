@@ -43,11 +43,12 @@ public class PersonArrayAdapter extends ArrayAdapter<Person> {
 		nameView.setText(p.getName());
 		timeView.setText(p.getTime());
 
+		ImageView gravatarView = (ImageView)personListView.findViewById(R.id.gravatarImageView);
 		if (PreferenceManager.getDefaultSharedPreferences(getContext()).getBoolean(getContext().getString(R.string.PREF_LOAD_GRAVATARS), false)) {
-			ImageView gravatarView = (ImageView)personListView.findViewById(R.id.gravatarImageView);
 			gravatarView.setImageBitmap(p.getGravatarImage());
+		} else {
+			gravatarView.setImageResource(R.drawable.one);
 		}
-		
 		return personListView;
 	}
 }

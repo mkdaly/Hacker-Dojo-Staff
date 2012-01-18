@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import net.metamike.hackerdojo.widget.InfoActivity.DojoStatus;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -19,21 +21,15 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-public class DisplayActivity extends Activity {
+public class StaffActivity extends Activity {
 	private static final String TAG = "DisplayActivity";
-	static final int PREFERENCE_ACTIVITY = 1;
 	static final int MALFORMED_URL_DIALOG = 1;
 	static final int IO_EXECPTION_DIALOG = 2;
-
-	public static final String DOJO_PREFERENCES_UPDATED = "Dojo_Preferences_Updated";
 
 	//Views
 	private TextView statusView;
@@ -52,7 +48,7 @@ public class DisplayActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		Log.i(TAG, "onCreate(" + savedInstanceState + ")");
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.main);
+		setContentView(R.layout.staff);
 		PreferenceManager.setDefaultValues(getApplicationContext(), R.xml.preferences, true);
 
 		throbber = (ProgressBar) findViewById(R.id.throbber);
@@ -67,7 +63,7 @@ public class DisplayActivity extends Activity {
 
 	@Override
 	protected Dialog onCreateDialog(int id) {
-		AlertDialog.Builder builder = new AlertDialog.Builder(DisplayActivity.this);
+		AlertDialog.Builder builder = new AlertDialog.Builder(StaffActivity.this);
 		switch (id) {
 		case MALFORMED_URL_DIALOG:
 			builder.setTitle(R.string.DIALOG_malformed_url_title)
@@ -76,8 +72,8 @@ public class DisplayActivity extends Activity {
 				.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface arg0, int arg1) {
-						DisplayActivity.this.resetURLString();
-						DisplayActivity.this.refresh();
+						StaffActivity.this.resetURLString();
+						startService( new Intent(StaffActivity.this, QueryService.class));
 					}})
 				.setNegativeButton(R.string.no, null);
 			return builder.create();
@@ -102,7 +98,7 @@ public class DisplayActivity extends Activity {
 				break;
 		}
 	}
-	
+
 	private void resetURLString() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		String urlString = getString(R.string.widget_url);
@@ -134,41 +130,6 @@ public class DisplayActivity extends Activity {
 		}
 	}
 	
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		super.onCreateOptionsMenu(menu);
-		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.main, menu);
-		return true;
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		super.onOptionsItemSelected(item);
-		switch(item.getItemId()) {
-			case (R.id.menu_refresh):
-				refresh();
-				return true;
-			case (R.id.menu_exit):
-				this.stopService(new Intent(this, QueryService.class));
-				this.finish();
-				return true;
-			case (R.id.menu_preferences):
-				startActivityForResult(new Intent(this, PreferencesActivity.class), DisplayActivity.PREFERENCE_ACTIVITY);
-				return true;
-		}
-		return false;
-	}
-	
-	@Override
-	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-		super.onActivityResult(requestCode, resultCode, data);
-		if (requestCode == PREFERENCE_ACTIVITY)
-			/*Since the back button is used to exit the PA,
-			  the resultCode will be Activity.RESULT_CANCELLED */
-			//if (resultCode == Activity.RESULT_OK)
-			updateFromPreferences();
-	}
 
 	@Override
 	protected void onPause() {
@@ -189,21 +150,6 @@ public class DisplayActivity extends Activity {
 //		registerReceiver(personReceiver, startedFilter);
 		super.onResume();
 	}
-
-	private void refresh() {
-		this.people.clear();
-		personAdapter.notifyDataSetChanged();
-		//setStatusLine(DojoStatus.FETCHING);
-		startService(new Intent(this, QueryService.class));
-	}
-	
-	private void updateFromPreferences() {
-		//TODO: Implement auto-refresh
-		
-		//TODO: check for change and refresh IFF the url changed
-		//setValuesFromPreferences();
-		sendBroadcast( new Intent(DOJO_PREFERENCES_UPDATED));
-	}
 	
 	public class ExceptionReceiver extends BroadcastReceiver {
 		@Override
@@ -216,10 +162,10 @@ public class DisplayActivity extends Activity {
 				setStatusLine(DojoStatus.UNKNOWN);
 				Exception e = (Exception)info.getSerializable("exception");
 				if (e instanceof MalformedURLException)
-					showDialog(DisplayActivity.MALFORMED_URL_DIALOG);
+					showDialog(StaffActivity.MALFORMED_URL_DIALOG);
 				if (e instanceof IOException) {
-					DisplayActivity.this.exceptionText = e.toString();
-					showDialog(DisplayActivity.IO_EXECPTION_DIALOG);
+					StaffActivity.this.exceptionText = e.toString();
+					showDialog(StaffActivity.IO_EXECPTION_DIALOG);
 				}
 			}
 		}
@@ -233,6 +179,7 @@ public class DisplayActivity extends Activity {
 			}
 			Bundle info = intent.getExtras();
 			if (info != null && info.containsKey(QueryService.INTENT_EXTRA_PEOPLE)) {
+				people.clear();
 				people.addAll((List<? extends Person>) info.getParcelableArrayList(QueryService.INTENT_EXTRA_PEOPLE));
 				personAdapter.notifyDataSetChanged();
 				setStatusLine((DojoStatus) info.get(QueryService.INTENT_EXTRA_STATUS));
@@ -242,12 +189,6 @@ public class DisplayActivity extends Activity {
 		}
 	}
 	
-	public enum DojoStatus {
-		OPEN,
-		CLOSED,
-		UNKNOWN,
-		FETCHING;
-	}
 /*	
 	private ServiceConnection queryConnection = new ServiceConnection() {
 		private QueryService queryService;

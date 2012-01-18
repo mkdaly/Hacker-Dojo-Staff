@@ -26,10 +26,14 @@ public class Person implements Parcelable {
 	public Person(String name, String time, String imageURL) {
 		this.name = name;
 		this.time = time;
-		try {
-			setGravatar(new URL(imageURL));
-		} catch (MalformedURLException mfu) {
-			Log.e(TAG, "IO Error.", mfu);
+		if (imageURL != null) {
+			try {
+				setGravatar(new URL(imageURL+"?s=50"));
+			} catch (MalformedURLException mfu) {
+				Log.e(TAG, "IO Error.", mfu);
+			}
+		} else {
+			image = null;
 		}
 	}
 	
