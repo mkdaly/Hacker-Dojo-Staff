@@ -8,21 +8,22 @@
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:layout_width="fill_parent"
   android:layout_height="wrap_content">
-    <TextView android:id="@+id/staff_status"
+    <TextView android:id="@+id/events_status"
   	  android:layout_width="fill_parent"
   	  android:layout_height="wrap_content"
   	  android:gravity="center_horizontal"
   	  android:text="@string/fetching_status"/>
     <ProgressBar
-      android:id="@+id/staff_throbber"
+      android:id="@+id/events_throbber"
   	  android:layout_width="wrap_content"
   	  android:layout_height="wrap_content"
   	  style="@android:style/Widget.ProgressBar.Small"
   	  android:layout_alignParentRight="true"
   	  android:visibility="invisible"/>
 </RelativeLayout>
-  
-  <ListView  android:id="@+id/staff_list"
+
+ <ListView  xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/events_list"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content"
     />
