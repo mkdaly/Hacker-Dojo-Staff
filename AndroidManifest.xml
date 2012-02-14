@@ -1,21 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="net.metamike.hackerdojo.widget"
-      android:versionCode="1"
-      android:versionName="1.0">
-<uses-permission android:name="android.permission.INTERNET"></uses-permission>
+    package="net.metamike.hackerdojo.widget"
+    android:versionCode="1"
+    android:versionName="1.0" >
 
+    <uses-permission android:name="android.permission.INTERNET" />
 
-    <application android:icon="@drawable/icon" android:label="@string/app_name" android:theme="@style/StaffStyle">
-        <activity android:launchMode="standard" android:name=".StaffActivity">
+    <application
+        android:icon="@drawable/icon"
+        android:label="@string/app_name"
+        android:theme="@style/StaffStyle" >
+        <activity android:name="InfoActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
         </activity>
-        <activity android:name="PreferencesActivity" android:label="@string/prefs_name"></activity>
-        <service android:name="QueryService"/>
-        <activity android:name="InfoActivity"><intent-filter>
-                <action android:name="android.intent.action.MAIN"></action>
-                <category android:name="android.intent.category.LAUNCHER"></category>
-            </intent-filter></activity>
+        <activity
+            android:name="StaffActivity"
+            android:launchMode="standard" >
+        </activity>
+        <activity
+            android:name="PreferencesActivity"
+            android:label="@string/prefs_name" >
+        </activity>
 
+        <service android:name=".StaffFetchService" android:enabled="true"/>
+        <service android:name=".EventFetchService" />
 
+        <activity android:name="EventActivity" />
     </application>
+
 </manifest>
