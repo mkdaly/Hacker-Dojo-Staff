@@ -1,7 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen
   xmlns:android="http://schemas.android.com/apk/res/android">
-	<CheckBoxPreference 
+  <PreferenceCategory android:title="Staff Options">
+	<CheckBoxPreference
+		android:title="Load Gravatar Images"
+		android:defaultValue="true"
+		android:key="@string/PREF_LOAD_GRAVATARS"
+		android:summary="Fetch gravatar images from the Internet" 
+	/>
+	<EditTextPreference
+		android:title="Staff JSON URL"
+		android:defaultValue="@string/staff_url"
+		android:key="@string/PREF_STAFF_URL"
+		android:summary="*Changing this can break the app*"
+		android:inputType="textUri"
+	/>
+  </PreferenceCategory>
+  <PreferenceCategory android:title="Event Options">
+	<EditTextPreference
+		android:title="Events JSON URL"
+		android:defaultValue="@string/events_url"
+		android:key="@string/PREF_EVENTS_URL"
+		android:summary="*Changing this can break the app*"
+		android:inputType="textUri"
+	/>
+  </PreferenceCategory >
+  <PreferenceCategory android:title="Refresh Options">
+      	<CheckBoxPreference 
 		android:title="Auto refresh"
 		android:defaultValue="false"
 		android:key="@string/PREF_AUTO_REFRESH"
@@ -15,23 +40,12 @@
 		android:dependency="@string/PREF_AUTO_REFRESH"
 		android:inputType="number"
 	/>
-	<CheckBoxPreference
-		android:title="Load Gravatar Images"
-		android:defaultValue="true"
-		android:key="@string/PREF_LOAD_GRAVATARS"
-		android:summary="Fetch gravatar images from the Internet" 
-	
-	/>
-	<EditTextPreference
-		android:title="Ministaff URL"
-		android:defaultValue="@string/widget_url"
-		android:key="@string/PREF_WIDGET_URL"
-		android:summary="*Changing this can break the app*"
-		android:inputType="textUri"
-	/>
-	<net.metamike.hackerdojo.widget.ConfirmDialogPreference
+  </PreferenceCategory>
+  <PreferenceCategory android:title="Global Options">
+      	<net.metamike.hackerdojo.widget.ConfirmDialogPreference
 		android:title="Reset to defaults"
 		android:key="@string/PREF_RESET"
 		android:dialogMessage="@string/reset_text"
 	/>
+  </PreferenceCategory>
 </PreferenceScreen>
