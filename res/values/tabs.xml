@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="staff_name">Staff</string>
+    <integer name="staff_tab">1</integer>
+    <string name="events_name">Events</string>
+    <integer name="events_tab">2</integer>
+</resources>

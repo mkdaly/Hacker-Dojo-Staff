@@ -3,7 +3,8 @@
     <string name="PREF_AUTO_REFRESH">AUTO_REFRESH</string>
     <string name="PREF_REFRESH_INTERVAL">REFRESH_INTERVAL</string>
     <string name="PREF_LOAD_GRAVATARS">LOAD_GRAVATARS</string>
-    <string name="PREF_WIDGET_URL">WIDGET_URL</string>
+    <string name="PREF_STAFF_URL">STAFF_URL</string>
+    <string name="PREF_EVENTS_URL">EVENTS_URL</string>
     <string name="PREF_RESET">RESET</string>
     <string name="reset_text">Reset preferences to their default values?</string>
 </resources>

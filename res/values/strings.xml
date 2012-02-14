@@ -12,7 +12,8 @@
 	
     <string name="app_name">Hacker Dojo Staff</string>
     <string name="prefs_name">Preferences for Hacker Dojo Staff</string>
-    <string name="widget_url">http://hackerdojo-signin.appspot.com/staffjson</string>
+    <string name="staff_url">http://hackerdojo-signin.appspot.com/staffjson</string>
+    <string name="events_url">http://events.hackerdojo.com/events.json</string>
 
     <string name="DIALOG_malformed_url_title">Bad URL</string>
     <string name="DIALOG_malformed_url_body">The URL for the ministaff widget is broken. Reset it?</string>

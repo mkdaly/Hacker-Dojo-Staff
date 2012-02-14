@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="JSON_IMAGE_URL">image_url</string>
-    <string name="JSON_NAME">name</string>
-    <string name="JSON_LOG_IN_TIME">created</string>
+    <string name="JSON_PERSON_IMAGE_URL">image_url</string>
+    <string name="JSON_PERSON_NAME">name</string>
+    <string name="JSON_PERSON_LOG_IN_TIME">created</string>
+    
+    <string name="JSON_EVENT_ID">id</string>
+    <string name="JSON_EVENT_TITLE">name</string>
+    <string name="JSON_EVENT_START_TIME">start_time</string>
+    <string name="JSON_EVENT_END_TIME">end_time</string>
+    <string name="JSON_EVENT_STATUS">status</string>
+    <string name="JSON_EVENT_ROOM">rooms</string>
+    <string name="JSON_EVENT_MEMBER">member</string>
+    <string name="JSON_EVENT_TYPE">type</string>
+    <string name="JSON_EVENT_EST_SIZE">estimated_size</string>
 </resources>
