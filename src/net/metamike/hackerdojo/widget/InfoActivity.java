@@ -1,6 +1,7 @@
 package net.metamike.hackerdojo.widget;
 
 import android.app.TabActivity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
@@ -15,13 +16,22 @@ public class InfoActivity extends TabActivity {
 
 	static final int PREFERENCE_ACTIVITY = 1;
 	public static final String DOJO_PREFERENCES_UPDATED = "Dojo_Preferences_Updated";
+	static final int MESSAGE_START = 1;
+	static final int MESSAGE_STOP = 2;
+	
+	private TabHost tabHost;
+	private String events;
+	private String staff;
 
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
 	    setContentView(R.layout.main);
 
+	    events = getString(R.string.events_name);
+	    staff = getString(R.string.staff_name);
+	    
 	    Resources res = getResources(); // Resource object to get Drawables
-	    TabHost tabHost = getTabHost();  // The activity TabHost
+	    tabHost = getTabHost();  // The activity TabHost
 	    TabHost.TabSpec spec;  // Resusable TabSpec for each tab
 	    Intent intent;  // Reusable Intent for each tab
 
@@ -29,19 +39,19 @@ public class InfoActivity extends TabActivity {
 	    intent = new Intent().setClass(this, StaffActivity.class);
 
 	    // Initialize a TabSpec for each tab and add it to the TabHost
-	    spec = tabHost.newTabSpec("staff").setIndicator("Staff",
+	    spec = tabHost.newTabSpec(staff).setIndicator(staff,
 	                      res.getDrawable(R.drawable.ic_tab_staff))
 	                  .setContent(intent);
 	    tabHost.addTab(spec);
 
 	    // Do the same for the other tabs
-	    intent = new Intent().setClass(this, StaffActivity.class);
-	    spec = tabHost.newTabSpec("events").setIndicator("Events",
+	    intent = new Intent().setClass(this, EventActivity.class);
+	    spec = tabHost.newTabSpec(events).setIndicator(events,
 	                      res.getDrawable(R.drawable.ic_tab_staff))
 	                  .setContent(intent);
 	    tabHost.addTab(spec);
 
-	    tabHost.setCurrentTabByTag("staff");
+	    tabHost.setCurrentTabByTag(events);
 	}
 	
 	@Override
@@ -57,11 +67,15 @@ public class InfoActivity extends TabActivity {
 		super.onOptionsItemSelected(item);
 		switch(item.getItemId()) {
 			case (R.id.menu_refresh):
-				//refresh();
-				startService(new Intent(this, QueryService.class));
+				if (tabHost.getCurrentTabTag().equals(staff)) {
+					startService( new Intent(this, StaffFetchService.class));
+				} else if (tabHost.getCurrentTabTag().equals(staff)) {
+					startService( new Intent(this, EventFetchService.class));
+				}
 				return true;
 			case (R.id.menu_exit):
-				this.stopService(new Intent(this, QueryService.class));
+				this.stopService(new Intent(this, EventFetchService.class));
+				this.stopService(new Intent(this, StaffFetchService.class));
 				this.finish();
 				return true;
 			case (R.id.menu_preferences):
@@ -75,11 +89,12 @@ public class InfoActivity extends TabActivity {
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
-		if (requestCode == InfoActivity.PREFERENCE_ACTIVITY)
+		//TODO:
+		//if (requestCode == InfoActivity.PREFERENCE_ACTIVITY)
 			/*Since the back button is used to exit the PA,
 			  the resultCode will be Activity.RESULT_CANCELLED */
 			//if (resultCode == Activity.RESULT_OK)
-			startService( new Intent(this, QueryService.class));
+			//startService( new Intent(this, QueryService.class));
 			//sendBroadcast( new Intent(DOJO_PREFERENCES_UPDATED));
 	}
 
