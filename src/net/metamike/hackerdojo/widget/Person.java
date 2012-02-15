@@ -26,15 +26,7 @@ public class Person implements Parcelable {
 	public Person(String name, String time, String imageURL) {
 		this.name = name;
 		this.time = time;
-		if (imageURL != null) {
-			try {
-				setGravatar(new URL(imageURL+"?s=50"));
-			} catch (MalformedURLException mfu) {
-				Log.e(TAG, "IO Error.", mfu);
-			}
-		} else {
-			image = null;
-		}
+		
 	}
 	
 	private Person(Parcel src) {
@@ -104,6 +96,19 @@ public class Person implements Parcelable {
 	public void setGravatar(Resources rez, int id) {
 		image = BitmapFactory.decodeResource(rez, id);
 	}
+	
+	public void setGravatar(String url) {
+		if (url != null) {
+			try {
+				setGravatar(new URL(url+"?s=50"));
+			} catch (MalformedURLException mfu) {
+				Log.e(TAG, "IO Error.", mfu);
+			}
+		} else {
+			setGravatar(Resources.getSystem(), R.drawable.one);
+		}
+	}
+
 
 	@Override
 	public int describeContents() {
