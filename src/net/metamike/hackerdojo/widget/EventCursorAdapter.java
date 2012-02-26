@@ -1,22 +1,13 @@
 package net.metamike.hackerdojo.widget;
 
 import java.text.DateFormat;
-import java.util.Date;
-import java.util.List;
-
-import net.metamike.hackerdojo.widget.Event.Status;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.CursorAdapter;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
 public class EventCursorAdapter extends CursorAdapter {
@@ -37,13 +28,10 @@ public class EventCursorAdapter extends CursorAdapter {
 		ViewHolder holder = (ViewHolder)view.getTag();
 		
 		DateFormat df = android.text.format.DateFormat.getMediumDateFormat(context);
-		holder.nameView.setText(
-				cursor.getInt(0) + ": " +
-				cursor.getString(cursor.getColumnIndex(EventDBAdapter.KEY_NAME)) +
-				" in " + cursor.getString(cursor.getColumnIndex(EventDBAdapter.KEY_LOCATION)));;
-		holder.timeView.setText(
-				df.format(new Date(cursor.getLong(cursor.getColumnIndex(EventDBAdapter.KEY_START)))) + 
-				" to " + df.format(new Date(cursor.getLong(cursor.getColumnIndex(EventDBAdapter.KEY_END)))));
+		//DateFormat tf = android.text.format.DateFormat.getTimeFormat(context);
+		Event e = EventDBAdapter.getEventObjectFromCursor(cursor);
+		holder.nameView.setText(cursor.getInt(0) + ": " + e.getName() + " in " + e.getRoom());
+		holder.timeView.setText(df.format(e.getStart()) + " to " + df.format(e.getEnd()));
 	}
 
 	@Override

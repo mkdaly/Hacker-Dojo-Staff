@@ -2,7 +2,7 @@ package net.metamike.hackerdojo.widget;
 
 import java.util.Date;
 
-import net.metamike.hackerdojo.widget.Event.Status;
+import net.metamike.hackerdojo.widget.Event.RoomStatus;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -45,12 +45,10 @@ public class EventDBAdapter {
 			KEY_STATUS + " integer not null);";
 	
 	private SQLiteDatabase eventDB;
-	private final Context context;
 	private EventDBHelper dbHelper;
 	
 	
 	public EventDBAdapter(Context context) {
-		this.context = context;
 		dbHelper = new EventDBHelper(context, EVENT_DB_NAME, null, DATABASE_VERSION);
 	}
 	
@@ -72,7 +70,7 @@ public class EventDBAdapter {
 	public long insertEntry(Event e) {
 		ContentValues values = new ContentValues();
 		values.put(KEY_END, e.getEnd().getTime());
-		values.put(KEY_DOJO_ID, e.getId());
+		values.put(KEY_DOJO_ID, e.getDojoID());
 		values.put(KEY_LOCATION, e.getRoom());
 		values.put(KEY_NAME, e.getName());
 		values.put(KEY_START, e.getStart().getTime());
@@ -80,30 +78,40 @@ public class EventDBAdapter {
 		return eventDB.insert(EVENT_TABLE, null, values);
 	}
 
-	public boolean removeEntry(long id) {
-		return eventDB.delete(EVENT_TABLE, KEY_ID + "=" + id, null) > 0;
+	public boolean removeEntry(Long dojoID) {
+		return eventDB.delete(EVENT_TABLE, KEY_DOJO_ID + "=" + dojoID, null) > 0;
 	}
 	
 	public Cursor getAllEntries() {
-		return eventDB.query(EVENT_TABLE, new String[] {KEY_ID,KEY_START,KEY_END,KEY_NAME,KEY_STATUS,KEY_LOCATION},
+		return eventDB.query(EVENT_TABLE, new String[] {KEY_ID,KEY_DOJO_ID,KEY_START,KEY_END,KEY_NAME,KEY_STATUS,KEY_LOCATION},
 				null, null, null, null, null);
 		//TODO: probably will want to specify more options.
 	}
 	
-	public Event getEntry(long id) {
-		Cursor c = eventDB.query(EVENT_TABLE, new String[] {KEY_ID,KEY_START,KEY_NAME,KEY_STATUS,KEY_LOCATION},
-				KEY_ID + "=" + id, null, null, null, null);
-		return new Event(c.getLong(c.getColumnIndex(KEY_ID)),
+	public Event getEntry(Long dojoID) {
+		Cursor c = eventDB.query(EVENT_TABLE, new String[] {KEY_ID,KEY_DOJO_ID,KEY_START,KEY_NAME,KEY_STATUS,KEY_LOCATION},
+				KEY_DOJO_ID + "=" + dojoID, null, null, null, null);
+		return getEventObjectFromCursor(c);
+	}
+	
+	public int updateEntry(Long dojoID, Event e) {
+		ContentValues values = new ContentValues();
+		values.put(KEY_END, e.getEnd().getTime());
+		values.put(KEY_DOJO_ID, e.getDojoID());
+		values.put(KEY_LOCATION, e.getRoom());
+		values.put(KEY_NAME, e.getName());
+		values.put(KEY_START, e.getStart().getTime());
+		values.put(KEY_STATUS, e.getStatus().ordinal());
+		return eventDB.update(EVENT_TABLE, values, KEY_DOJO_ID + "=" + dojoID, null );
+	}
+	
+	public static Event getEventObjectFromCursor(Cursor c) {
+		return new Event(c.getLong(c.getColumnIndex(KEY_DOJO_ID)),
 				c.getString(c.getColumnIndex(KEY_NAME)),
 				new Date(c.getLong(c.getColumnIndex(KEY_START))),
 				new Date(c.getLong(c.getColumnIndex(KEY_END))),
-				Status.values()[c.getInt(c.getColumnIndex(KEY_STATUS))],
+				RoomStatus.values()[c.getInt(c.getColumnIndex(KEY_STATUS))],
 				c.getString(c.getColumnIndex(KEY_LOCATION)));
-	}
-	
-	//TODO:
-	public boolean updateEntry(long id, Event e) {
-		return false;
 	}
 	
 	private static class EventDBHelper extends SQLiteOpenHelper {

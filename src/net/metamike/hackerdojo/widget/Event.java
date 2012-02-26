@@ -3,28 +3,28 @@ package net.metamike.hackerdojo.widget;
 import java.util.Date;
 
 import android.text.format.Time;
+import android.util.TimeFormatException;
 
 public class Event {
-	private static final String TAG = "Event";
 
-	private Long id;
+	private Long dojoID;
 	private String name;
 	private Date start;
 	private Date end;
-	private Status status;
+	private RoomStatus status;
 	private String room;
 	
 	public Event() {
-		id = -1L;
+		dojoID = -1L;
 		name = "";
 		start = new Date();
 		end = new Date();
-		status = Status.UNKNOWN;
+		status = RoomStatus.UNKNOWN;
 		room = "";
 	}
 
-	public Event(Long id, String name, Date start, Date end, Status status, String room) {
-		this.id = id;
+	public Event(Long dojoID, String name, Date start, Date end, RoomStatus status, String room) {
+		this.dojoID = dojoID;
 		this.name = name;
 		this.start = start;
 		this.end = end;
@@ -33,27 +33,28 @@ public class Event {
 	}
 	
 	public Boolean verify() {
-		if (id != null && name != null && start != null) {
+		if (dojoID != null && name != null && start != null) {
 			return true;
 		}
 		return false;
 	}
 	
 	private Date getDateFromString(String time) {
-		Time t = new Time();
-		if (t.parse3339(time)) {
+		try {
+			Time t = new Time();
+			t.parse3339(time);
 			return new Date(t.toMillis(false));
-		} else {
+		} catch (TimeFormatException tfe) {
 			return new Date();
 		}
 	}
 		
-	public Long getId() {
-		return id;
+	public Long getDojoID() {
+		return dojoID;
 	}
 
-	public void setId(Long id) {
-		this.id = id;
+	public void setDojoID(Long dojoID) {
+		this.dojoID = dojoID;
 	}
 
 	public String getName() {
@@ -88,21 +89,21 @@ public class Event {
 		end = getDateFromString(endString);
 	}
 
-	public Status getStatus() {
+	public RoomStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(Status status) {
+	public void setStatus(RoomStatus status) {
 		this.status = status;
 	}
 	
 	public void setStatus(String statusString) {
 		try {
-			status = Status.valueOf(statusString.toUpperCase());
+			status = RoomStatus.valueOf(statusString.toUpperCase());
 		} catch (IllegalArgumentException iae) {
-			status = Status.UNKNOWN;
+			status = RoomStatus.UNKNOWN;
 		} catch (NullPointerException npe) {
-			status = Status.UNKNOWN;
+			status = RoomStatus.UNKNOWN;
 		}
 	}
 
@@ -114,7 +115,7 @@ public class Event {
 		this.room = room;
 	}
 
-	public enum Status {
+	public enum RoomStatus {
 		APPROVED,
 		CANCELLED,
 		UNKNOWN;

@@ -1,12 +1,9 @@
 package net.metamike.hackerdojo.widget;
 
 import android.app.TabActivity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -47,7 +44,7 @@ public class InfoActivity extends TabActivity {
 	    // Do the same for the other tabs
 	    intent = new Intent().setClass(this, EventActivity.class);
 	    spec = tabHost.newTabSpec(events).setIndicator(events,
-	                      res.getDrawable(R.drawable.ic_tab_staff))
+	                      res.getDrawable(R.drawable.ic_tab_events))
 	                  .setContent(intent);
 	    tabHost.addTab(spec);
 
@@ -69,7 +66,7 @@ public class InfoActivity extends TabActivity {
 			case (R.id.menu_refresh):
 				if (tabHost.getCurrentTabTag().equals(staff)) {
 					startService( new Intent(this, StaffFetchService.class));
-				} else if (tabHost.getCurrentTabTag().equals(staff)) {
+				} else if (tabHost.getCurrentTabTag().equals(events)) {
 					startService( new Intent(this, EventFetchService.class));
 				}
 				return true;

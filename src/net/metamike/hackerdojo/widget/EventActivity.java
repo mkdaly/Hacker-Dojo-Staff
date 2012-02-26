@@ -1,5 +1,9 @@
 package net.metamike.hackerdojo.widget;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.TreeSet;
+
 import net.metamike.hackerdojo.widget.InfoActivity.DojoStatus;
 
 import android.app.Activity;
@@ -22,6 +26,7 @@ import android.widget.TextView;
 public class EventActivity extends Activity implements Handler.Callback {
 	private static final String TAG = "EventActivity";
 	static final int MESSAGE_EVENT = 100;
+	static final int START_INTENT = 99;
 
 	//Views
 	private TextView statusView;
@@ -32,6 +37,7 @@ public class EventActivity extends Activity implements Handler.Callback {
 	private EventCursorAdapter eventAdapter;
 	private EventDBAdapter dbApapter;
 	private Cursor eventCursor;
+	private Set<Long> eventIDs = new TreeSet<Long>();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -47,11 +53,15 @@ public class EventActivity extends Activity implements Handler.Callback {
 		dbApapter.open();
 		eventCursor = dbApapter.getAllEntries();
 		startManagingCursor(eventCursor);
+		eventIDs = getEventIDs(eventCursor);
 		eventAdapter = new EventCursorAdapter(this,eventCursor);
 		eventView.setAdapter(eventAdapter);
 		eventAdapter.notifyDataSetChanged();
 
-		getApplicationContext().bindService( new Intent(getApplicationContext(), EventFetchService.class), queryConnection, Context.BIND_AUTO_CREATE);
+		Context appContext = getApplicationContext();
+		Intent startIntent = new Intent(getApplicationContext(), EventFetchService.class);
+		startIntent.setFlags(START_INTENT);
+		appContext.bindService( startIntent, queryConnection, Context.BIND_AUTO_CREATE);
 	}
 	
 	@Override
@@ -74,6 +84,17 @@ public class EventActivity extends Activity implements Handler.Callback {
 		}
 	}
 
+	private synchronized Set<Long> getEventIDs(Cursor c) {
+		if (c.moveToFirst()) {
+			Set<Long> ids = new TreeSet<Long>();
+			do {
+				ids.add(c.getLong(c.getColumnIndex(EventDBAdapter.KEY_DOJO_ID)));
+			} while (c.moveToNext());
+			c.moveToFirst();
+			return ids;
+		} else
+			return Collections.emptySet();
+	}
 	
 	/* TODO: There should be a better way to update the
 	 * view as new events hit the database.
@@ -93,7 +114,12 @@ public class EventActivity extends Activity implements Handler.Callback {
 				eventAdapter.notifyDataSetChanged();
 				return true;
 			case MESSAGE_EVENT:
-				this.dbApapter.insertEntry((Event)msg.obj);
+				Event e = (Event)msg.obj;
+				if (eventIDs.contains(e.getDojoID())) {
+					this.dbApapter.updateEntry(e.getDojoID(), e);
+				} else {
+					this.dbApapter.insertEntry((Event)msg.obj);
+				}
 				return true;
 		}
 		return false;

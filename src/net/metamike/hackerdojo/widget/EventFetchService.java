@@ -20,7 +20,8 @@ public class EventFetchService extends QueryService {
 	
 	@Override
 	public void onStart(Intent i, int startid) {
-		go();
+		if (i.getFlags() != EventActivity.START_INTENT)
+			go();
 	}
 	
 	public void go() {
@@ -52,7 +53,7 @@ public class EventFetchService extends QueryService {
 			} else if ( getString(R.string.JSON_EVENT_STATUS).equals(name)){
 				e.setStatus(reader.nextString());
 			} else if ( getString(R.string.JSON_EVENT_ID).equals(name)){
-				e.setId(reader.nextLong());
+				e.setDojoID(reader.nextLong());
 			} else {
 				reader.skipValue();
 			}
