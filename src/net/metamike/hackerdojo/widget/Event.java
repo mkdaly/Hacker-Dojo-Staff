@@ -9,21 +9,23 @@ public class Event {
 
 	private Long dojoID;
 	private String name;
-	private Date start;
-	private Date end;
-	private RoomStatus status;
+	private Time start;
+	private Time end;
+	private EventStatus status;
 	private String room;
 	
 	public Event() {
 		dojoID = -1L;
 		name = "";
-		start = new Date();
-		end = new Date();
-		status = RoomStatus.UNKNOWN;
+		start = new Time();
+		start.setToNow();
+		end = new Time();
+		end.setToNow();
+		status = EventStatus.UNKNOWN;
 		room = "";
 	}
 
-	public Event(Long dojoID, String name, Date start, Date end, RoomStatus status, String room) {
+	public Event(Long dojoID, String name, Time start, Time end, EventStatus status, String room) {
 		this.dojoID = dojoID;
 		this.name = name;
 		this.start = start;
@@ -39,14 +41,14 @@ public class Event {
 		return false;
 	}
 	
-	private Date getDateFromString(String time) {
+	private Time getDateFromString(String time) {
+		Time t = new Time();
 		try {
-			Time t = new Time();
 			t.parse3339(time);
-			return new Date(t.toMillis(false));
 		} catch (TimeFormatException tfe) {
-			return new Date();
+			t.setToNow();
 		}
+		return t;
 	}
 		
 	public Long getDojoID() {
@@ -65,45 +67,45 @@ public class Event {
 		this.name = name;
 	}
 
-	public Date getStart() {
+	public Time getStart() {
 		return start;
 	}
 
-	public void setStart(Date start) {
-		this.start = start;
+	public void setStart(Time start) {
+		this.start.set(start);
 	}
 
 	public void setStart(String startString) {
-		start = getDateFromString(startString);
+		start.set(getDateFromString(startString));
 	}
 	
-	public Date getEnd() {
+	public Time getEnd() {
 		return end;
 	}
 
-	public void setEnd(Date end) {
-		this.end = end;
+	public void setEnd(Time end) {
+		this.end.set(end);
 	}
 	
 	public void setEnd(String endString) {
-		end = getDateFromString(endString);
+		end.set(getDateFromString(endString));
 	}
 
-	public RoomStatus getStatus() {
+	public EventStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(RoomStatus status) {
+	public void setStatus(EventStatus status) {
 		this.status = status;
 	}
 	
 	public void setStatus(String statusString) {
 		try {
-			status = RoomStatus.valueOf(statusString.toUpperCase());
+			status = EventStatus.valueOf(statusString.toUpperCase());
 		} catch (IllegalArgumentException iae) {
-			status = RoomStatus.UNKNOWN;
+			status = EventStatus.UNKNOWN;
 		} catch (NullPointerException npe) {
-			status = RoomStatus.UNKNOWN;
+			status = EventStatus.UNKNOWN;
 		}
 	}
 
@@ -115,9 +117,10 @@ public class Event {
 		this.room = room;
 	}
 
-	public enum RoomStatus {
+	public enum EventStatus {
 		APPROVED,
-		CANCELLED,
-		UNKNOWN;
+		CANCELED,
+		UNKNOWN,
+		PAST;
 	}
 }

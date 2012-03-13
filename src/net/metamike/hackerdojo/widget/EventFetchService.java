@@ -54,6 +54,8 @@ public class EventFetchService extends QueryService {
 				e.setStatus(reader.nextString());
 			} else if ( getString(R.string.JSON_EVENT_ID).equals(name)){
 				e.setDojoID(reader.nextLong());
+			} else if (getString(R.string.JSON_EVENT_ROOM).equals(name)){
+				e.setRoom(readRoom(reader));
 			} else {
 				reader.skipValue();
 			}
@@ -63,6 +65,22 @@ public class EventFetchService extends QueryService {
 		msg.what = EventActivity.MESSAGE_EVENT;
 		msg.obj = e;
 		handler.sendMessage(msg);
+	}
+	
+	private String readRoom(JsonReader reader) {
+		try {
+			StringBuilder sb = new StringBuilder("");
+			reader.beginArray();
+			while (reader.hasNext()) {
+				sb.append(reader.nextString());
+				sb.append(", ");
+			}
+			reader.endArray();
+			return sb.substring(0, sb.length() - 2);
+		} catch (IOException ioe) {
+			//TODO: Swallow for now.;
+			return "";
+		}
 	}
 
 

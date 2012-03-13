@@ -1,8 +1,11 @@
 package net.metamike.hackerdojo.widget;
 
+import java.util.Collections;
 import java.util.Date;
+import java.util.Set;
+import java.util.TreeSet;
 
-import net.metamike.hackerdojo.widget.Event.RoomStatus;
+import net.metamike.hackerdojo.widget.Event.EventStatus;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -12,6 +15,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.text.format.Time;
 import android.util.Log;
 
 public class EventDBAdapter {
@@ -46,6 +50,8 @@ public class EventDBAdapter {
 	
 	private SQLiteDatabase eventDB;
 	private EventDBHelper dbHelper;
+	private Set<Long> ids = Collections.synchronizedSet(new TreeSet<Long>());
+	private Time now = new Time();
 	
 	
 	public EventDBAdapter(Context context) {
@@ -55,6 +61,7 @@ public class EventDBAdapter {
 	public EventDBAdapter open() throws SQLException  {
 		try {
 			eventDB = dbHelper.getWritableDatabase();
+			getEventIDs();
 		} catch (SQLiteException sle) {
 			Log.w("EventDBAdapter", sle.getMessage());
 			eventDB = dbHelper.getReadableDatabase();
@@ -66,17 +73,40 @@ public class EventDBAdapter {
 		eventDB.close();
 	}
 
-	//TODO: Need to do a insert or replace.
-	public long insertEntry(Event e) {
+	private boolean insertEntry(Event e) {
 		ContentValues values = new ContentValues();
-		values.put(KEY_END, e.getEnd().getTime());
+		values.put(KEY_END, e.getEnd().toMillis(false));
 		values.put(KEY_DOJO_ID, e.getDojoID());
 		values.put(KEY_LOCATION, e.getRoom());
 		values.put(KEY_NAME, e.getName());
-		values.put(KEY_START, e.getStart().getTime());
+		values.put(KEY_START, e.getStart().toMillis(false));
 		values.put(KEY_STATUS, e.getStatus().ordinal());
-		return eventDB.insert(EVENT_TABLE, null, values);
+		if (eventDB.insert(EVENT_TABLE, null, values) > -1) {
+			ids.add(e.getDojoID());
+			return true;
+		} else 
+			return false;
 	}
+	
+	public boolean saveEntry(Event e) {
+		if (ids.contains(e.getDojoID())) {
+			return updateEntry(e.getDojoID(), e) > 0;
+		} else {
+			return insertEntry(e);
+		}
+	}
+	
+	private void getEventIDs() {
+		Cursor c = eventDB.query(EVENT_TABLE, new String[]{KEY_DOJO_ID}, null, null, null, null, KEY_DOJO_ID);
+		if (c.moveToFirst()) {
+			do {
+				ids.add(c.getLong(0));
+			} while (c.moveToNext());
+			
+		}
+		c.close();
+	}
+
 
 	public boolean removeEntry(Long dojoID) {
 		return eventDB.delete(EVENT_TABLE, KEY_DOJO_ID + "=" + dojoID, null) > 0;
@@ -94,25 +124,37 @@ public class EventDBAdapter {
 		return getEventObjectFromCursor(c);
 	}
 	
-	public int updateEntry(Long dojoID, Event e) {
+	private int updateEntry(Long dojoID, Event e) {
 		ContentValues values = new ContentValues();
-		values.put(KEY_END, e.getEnd().getTime());
+		values.put(KEY_END, e.getEnd().toMillis(false));
 		values.put(KEY_DOJO_ID, e.getDojoID());
 		values.put(KEY_LOCATION, e.getRoom());
 		values.put(KEY_NAME, e.getName());
-		values.put(KEY_START, e.getStart().getTime());
-		values.put(KEY_STATUS, e.getStatus().ordinal());
+		values.put(KEY_START, e.getStart().toMillis(false));
+		now.setToNow();
+		if (e.getEnd().before(now)) {
+			values.put(KEY_STATUS, EventStatus.PAST.ordinal());
+		} else {
+			values.put(KEY_STATUS, e.getStatus().ordinal());
+		}
 		return eventDB.update(EVENT_TABLE, values, KEY_DOJO_ID + "=" + dojoID, null );
 	}
 	
+	
 	public static Event getEventObjectFromCursor(Cursor c) {
+		Time start = new Time();
+		Time end = new Time();
+		start.set(c.getLong(c.getColumnIndex(KEY_START)));
+		end.set(c.getLong(c.getColumnIndex(KEY_END)));
+		
 		return new Event(c.getLong(c.getColumnIndex(KEY_DOJO_ID)),
 				c.getString(c.getColumnIndex(KEY_NAME)),
-				new Date(c.getLong(c.getColumnIndex(KEY_START))),
-				new Date(c.getLong(c.getColumnIndex(KEY_END))),
-				RoomStatus.values()[c.getInt(c.getColumnIndex(KEY_STATUS))],
+				start,
+				end,
+				EventStatus.values()[c.getInt(c.getColumnIndex(KEY_STATUS))],
 				c.getString(c.getColumnIndex(KEY_LOCATION)));
 	}
+	
 	
 	private static class EventDBHelper extends SQLiteOpenHelper {
 
